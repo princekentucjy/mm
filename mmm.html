@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рацион на день — набор массы</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Georgia, 'Times New Roman', serif; background: #f7f3ea; color: #2c2820; padding: 24px 16px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #9a7b4f; font-family: system-ui; }
+  h1 { font-size: 30px; margin: 6px 0 4px; font-weight: 700; }
+  .sub { font-size: 14px; color: #6b6455; font-family: system-ui; margin: 0 0 16px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid #e8e2d6; }
+  .tab-btn { flex: 1; border: none; background: transparent; padding: 10px 6px; font-family: system-ui; font-size: 13.5px; font-weight: 600; color: #9a9384; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab-btn.active { color: #b5652f; border-bottom: 2px solid #b5652f; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .btn-primary { border: none; background: #b5652f; color: #fff; font-family: system-ui; font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 8px; cursor: pointer; }
+  .btn-secondary { border: 1px solid #e8e2d6; background: #fff; color: #4a4640; font-family: system-ui; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+
+  .summary { background: #fff; border: 1px solid #e8e2d6; border-radius: 12px; padding: 20px 22px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+  .summary-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .summary-top span:first-child { font-size: 15px; font-weight: 600; font-family: system-ui; }
+  #totalKcal { font-size: 28px; font-weight: 700; color: #b5652f; }
+  .macro { margin-bottom: 14px; }
+  .macro-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: #4a4640; font-family: system-ui; }
+  .macro-label span:first-child { font-weight: 600; }
+  .bar-bg { height: 8px; background: #e8e2d6; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.35s ease; }
+  .target-note { font-size: 12px; color: #9a9384; font-family: system-ui; margin-top: 4px; }
+
+  .meal-block { margin-bottom: 24px; }
+  .meal-title { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .meal-title h2 { font-size: 20px; font-weight: 700; margin: 0; }
+  .meal-time { font-size: 13px; color: #9a9384; font-family: system-ui; }
+  .options { display: grid; gap: 10px; }
+  .opt-card { border: 1px solid #e8e2d6; background: #fff; border-radius: 10px; overflow: hidden; transition: all 0.15s ease; }
+  .opt-card.selected { border: 2px solid #b5652f; background: #fdf3ea; }
+  .opt-main { text-align: left; border: none; background: transparent; padding: 12px 14px; cursor: pointer; font-family: system-ui; display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
+  .opt-name { font-size: 14.5px; font-weight: 500; margin-bottom: 3px; }
+  .opt-card.selected .opt-name { font-weight: 700; }
+  .opt-meta { font-size: 12px; color: #9a9384; }
+  .opt-kcal { font-size: 16px; font-weight: 700; color: #4a4640; white-space: nowrap; }
+  .opt-card.selected .opt-kcal { color: #b5652f; }
+  .toggle-recipe { width: 100%; border: none; border-top: 1px solid #f0ece0; background: transparent; padding: 6px 14px; font-family: system-ui; font-size: 12px; color: #b5652f; cursor: pointer; text-align: left; }
+  .opt-card.selected .toggle-recipe { border-top: 1px solid #f0dcc8; }
+  .recipe-body { padding: 4px 14px 14px; font-family: system-ui; font-size: 13px; color: #4a4640; display: none; }
+  .recipe-body.show { display: block; }
+  .recipe-body h4 { font-weight: 600; margin: 0 0 4px; font-size: 13px; }
+  .recipe-body ul, .recipe-body ol { margin: 0 0 10px; padding-left: 18px; }
+  .recipe-body ol { margin-bottom: 0; }
+  .footnote { font-size: 12px; color: #9a9384; font-family: system-ui; margin-top: 12px; }
+
+  .weight-form { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .weight-form input { font-family: system-ui; font-size: 14px; padding: 9px 10px; border: 1px solid #e8e2d6; border-radius: 8px; background: #fff; color: #2c2820; }
+  .weight-form input[type="date"] { flex: 1.2; min-width: 130px; }
+  .weight-form input[type="number"] { flex: 1; min-width: 90px; }
+  .weight-stats { display: flex; gap: 16px; margin-bottom: 20px; font-family: system-ui; flex-wrap: wrap; }
+  .stat-card { background: #fff; border: 1px solid #e8e2d6; border-radius: 10px; padding: 12px 16px; flex: 1; min-width: 120px; }
+  .stat-card .stat-label { font-size: 11.5px; color: #9a9384; margin-bottom: 4px; }
+  .stat-card .stat-value { font-size: 18px; font-weight: 700; color: #b5652f; }
+  .chart-wrap { background: #fff; border: 1px solid #e8e2d6; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .weight-list { list-style: none; margin: 0; padding: 0; }
+  .weight-list li { display: flex; justify-content: space-between; align-items: center; font-family: system-ui; font-size: 13.5px; padding: 9px 4px; border-bottom: 1px solid #f0ece0; }
+  .weight-list li:last-child { border-bottom: none; }
+  .del-btn { border: none; background: transparent; color: #c0442a; font-size: 12px; cursor: pointer; font-family: system-ui; }
+  .empty-note { font-family: system-ui; font-size: 13px; color: #9a9384; padding: 12px 0; }
+
+  .shop-list { list-style: none; margin: 0; padding: 0; }
+  .shop-list li { display: flex; align-items: center; gap: 10px; font-family: system-ui; font-size: 14px; padding: 9px 4px; border-bottom: 1px solid #f0ece0; }
+  .shop-list li.checked span { text-decoration: line-through; color: #9a9384; }
+  .shop-list input[type="checkbox"] { width: 18px; height: 18px; accent-color: #b5652f; }
+  .shop-group-title { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #9a7b4f; font-family: system-ui; margin: 18px 0 6px; }
+  .storage-note { font-size: 12px; color: #9a9384; font-family: system-ui; margin-top: 16px; line-height: 1.5; }
+
+  .day-card { background: #fff; border: 1px solid #e8e2d6; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .day-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .day-card-top .day-name { font-size: 16px; font-weight: 700; font-family: system-ui; }
+  .day-card-top .day-kcal { font-size: 14px; color: #b5652f; font-weight: 700; font-family: system-ui; }
+  .day-dishes { font-size: 12.5px; color: #6b6455; font-family: system-ui; line-height: 1.6; margin-bottom: 10px; }
+  .day-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .day-actions button { font-family: system-ui; font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; border: 1px solid #e8e2d6; background: #fdf3ea; color: #b5652f; }
+  .day-actions button.del { color: #c0442a; background: #fff; }
+  .day-empty { font-size: 13px; color: #9a9384; font-family: system-ui; }
+  .week-summary { display: flex; gap: 16px; margin-bottom: 20px; font-family: system-ui; flex-wrap: wrap; }
+
+  .shop-source-toggle { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">План набора массы · 178 см · 54 → 65–70 кг</div>
+  <h1>Мой рацион</h1>
+  <p class="sub">Без грибов. Из рыбы — только камбала.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="meal">🍽 Рацион</button>
+    <button class="tab-btn" data-tab="week">📅 Неделя</button>
+    <button class="tab-btn" data-tab="weight">⚖️ Вес</button>
+    <button class="tab-btn" data-tab="shop">🛒 Покупки</button>
+  </div>
+
+  <!-- ===== TAB: MEAL ===== -->
+  <div class="tab-panel active" id="tab-meal">
+    <button id="randomizeBtn" class="btn-primary" style="margin-bottom:14px;">🎲 Собрать день автоматически</button>
+
+    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
+      <select id="saveDaySelect" style="font-family:system-ui; font-size:14px; padding:9px 10px; border:1px solid #e8e2d6; border-radius:8px; background:#fff; color:#2c2820;">
+        <option value="mon">Понедельник</option>
+        <option value="tue">Вторник</option>
+        <option value="wed">Среда</option>
+        <option value="thu">Четверг</option>
+        <option value="fri">Пятница</option>
+        <option value="sat">Суббота</option>
+        <option value="sun">Воскресенье</option>
+      </select>
+      <button id="saveDayBtn" class="btn-secondary">💾 Сохранить как этот день</button>
+    </div>
+
+    <div class="summary">
+      <div class="summary-top"><span>Итог за день</span><span id="totalKcal">0 ккал</span></div>
+      <div class="macro">
+        <div class="macro-label"><span>Белки</span><span id="pLabel">0г / 160г (0%)</span></div>
+        <div class="bar-bg"><div class="bar-fill" id="pBar" data-color="#b5652f" style="width:0%;background:#b5652f;"></div></div>
+      </div>
+      <div class="macro">
+        <div class="macro-label"><span>Жиры</span><span id="fLabel">0г / 90г (0%)</span></div>
+        <div class="bar-bg"><div class="bar-fill" id="fBar" data-color="#8a9a5b" style="width:0%;background:#8a9a5b;"></div></div>
+      </div>
+      <div class="macro">
+        <div class="macro-label"><span>Углеводы</span><span id="cLabel">0г / 340г (0%)</span></div>
+        <div class="bar-bg"><div class="bar-fill" id="cBar" data-color="#6b8fa3" style="width:0%;background:#6b8fa3;"></div></div>
+      </div>
+      <div class="target-note">Цель: ~3300 ккал/день для набора массы при твоих параметрах.</div>
+    </div>
+
+    <div id="mealsContainer"></div>
+
+    <p class="footnote">* Некоторые блюда предполагают отваривание риса/гречки/пасты — если плиты нет, замени на варианты, где нужен только аэрогриль (например, камбала с картофелем).</p>
+  </div>
+
+  <!-- ===== TAB: WEEK ===== -->
+  <div class="tab-panel" id="tab-week">
+    <div class="week-summary" id="weekSummary"></div>
+    <div id="weekContainer"></div>
+    <button id="weekShopBtn" class="btn-primary" style="margin-top:8px;">🛒 Собрать список покупок на всю неделю</button>
+    <p class="storage-note">Собери рацион на вкладке «Рацион», затем вернись сюда и сохрани его под нужный день.</p>
+  </div>
+
+  <!-- ===== TAB: WEIGHT ===== -->
+  <div class="tab-panel" id="tab-weight">
+    <div class="weight-form">
+      <input type="date" id="weightDate">
+      <input type="number" id="weightValue" placeholder="Вес, кг" step="0.1">
+      <button class="btn-primary" id="addWeightBtn">Добавить</button>
+    </div>
+    <div class="weight-stats" id="weightStats"></div>
+    <div class="chart-wrap">
+      <svg id="weightChart" viewBox="0 0 640 220" style="width:100%;height:auto;display:block;"></svg>
+    </div>
+    <ul class="weight-list" id="weightList"></ul>
+    <p class="storage-note">Записи веса сохраняются только если файл открыт напрямую в браузере телефона (не в чате).</p>
+  </div>
+
+  <!-- ===== TAB: SHOP ===== -->
+  <div class="tab-panel" id="tab-shop">
+    <div class="shop-source-toggle">
+      <button id="genShopCurrentBtn" class="btn-secondary">Из текущего дня</button>
+      <button id="clearShopBtn" class="btn-secondary">Очистить отметки</button>
+    </div>
+    <div id="shopContainer"></div>
+    <p class="storage-note">Список суммирует одинаковые продукты — если курица нужна в трёх блюдах, будет одна строка с общим весом. Отметки сохраняются, только если файл открыт напрямую в браузере.</p>
+  </div>
+</div>
+
+<script>
+/* ---------- Storage helper ---------- */
+const memoryStore = {};
+const storage = {
+  get(key) {
+    try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : null; }
+    catch (e) { return memoryStore[key] !== undefined ? memoryStore[key] : null; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (e) { memoryStore[key] = value; }
+  },
+};
+
+/* ================= TAB SWITCHING ================= */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  };
+});
+
+/* ================= MEAL PLAN DATA ================= */
+/* Ingredient format: { n: name, a: amount (number or null), u: unit string ('' if none) } */
+const TARGETS = { p: 160, f: 90, c: 340 };
+const TARGETS_KCAL = 3300;
+
+const MEALS = [
+  { id: "breakfast", label: "Завтрак", time: "08:00", options: [
+    { name: "Овсянка overnight с бананом и арахисовой пастой", tool: "без техники", kcal: 650, p: 22, f: 20, c: 90,
+      ingredients: [{n:"овсянка",a:60,u:"г"},{n:"молоко",a:200,u:"мл"},{n:"банан",a:1,u:"шт"},{n:"арахисовая паста",a:15,u:"г"},{n:"мёд",a:10,u:"г"}],
+      steps: ["Смешать овсянку с молоком в банке.","Добавить банан, пасту и мёд, перемешать.","Убрать в холодильник на ночь (или залить горячей водой из кофемашины и подождать 5–7 минут)."] },
+    { name: "Тосты с авокадо и яйцом", tool: "тостер + аэрогриль", kcal: 580, p: 25, f: 30, c: 45,
+      ingredients: [{n:"хлеб",a:2,u:"кус."},{n:"авокадо",a:0.5,u:"шт"},{n:"яйца",a:2,u:"шт"},{n:"соль",a:null,u:""},{n:"специи",a:null,u:""}],
+      steps: ["Яйца в форму, посолить — аэрогриль 8–10 мин при 160°C.","Поджарить хлеб в тостере.","Размять авокадо, выложить на тосты, сверху яйцо."] },
+    { name: "Творог с мёдом, грецким орехом и бананом", tool: "без техники", kcal: 520, p: 35, f: 18, c: 55,
+      ingredients: [{n:"творог 5–9%",a:200,u:"г"},{n:"мёд",a:15,u:"г"},{n:"грецкий орех",a:20,u:"г"},{n:"банан",a:1,u:"шт"}],
+      steps: ["Выложить творог в миску.","Нарезать банан, добавить орехи.","Полить мёдом, перемешать."] },
+    { name: "Протеиновый смузи с арахисовой пастой", tool: "блендер", kcal: 750, p: 42, f: 24, c: 95,
+      ingredients: [{n:"банан",a:1,u:"шт"},{n:"овсянка",a:50,u:"г"},{n:"молоко",a:300,u:"мл"},{n:"арахисовая паста",a:20,u:"г"},{n:"протеин",a:1,u:"ложка"}],
+      steps: ["Всё в блендер.","Взбить 30–40 секунд.","Перелить и пить сразу."] },
+    { name: "Гранола с йогуртом и ягодами", tool: "без техники", kcal: 480, p: 20, f: 14, c: 65,
+      ingredients: [{n:"гранола",a:60,u:"г"},{n:"йогурт",a:200,u:"г"},{n:"ягоды",a:100,u:"г"},{n:"мёд",a:10,u:"г"}],
+      steps: ["Йогурт в миску.","Сверху гранола и ягоды.","Полить мёдом."] },
+    { name: "Омлет с сыром в аэрогриле", tool: "аэрогриль", kcal: 520, p: 32, f: 34, c: 8,
+      ingredients: [{n:"яйца",a:3,u:"шт"},{n:"молоко",a:30,u:"мл"},{n:"сыр",a:30,u:"г"},{n:"соль",a:null,u:""}],
+      steps: ["Взбить яйца с молоком и солью.","Вылить в форму, посыпать сыром.","Аэрогриль 10 мин при 160°C."] },
+  ]},
+  { id: "lunch", label: "Обед", time: "13:00", options: [
+    { name: "Куриное филе с рисом и овощами", tool: "аэрогриль + плита", kcal: 750, p: 45, f: 20, c: 85,
+      ingredients: [{n:"куриное филе",a:200,u:"г"},{n:"рис",a:80,u:"г"},{n:"овощи (перец, кабачок)",a:150,u:"г"},{n:"масло растительное",a:1,u:"ст.л."},{n:"специи",a:null,u:""}],
+      steps: ["Отварить рис.","Филе со специями — аэрогриль 18–20 мин при 180°C.","Овощи — аэрогриль 10 мин при 180°C.","Собрать на тарелке."] },
+    { name: "Камбала с картофелем", tool: "аэрогриль", kcal: 680, p: 40, f: 18, c: 80,
+      ingredients: [{n:"камбала",a:250,u:"г"},{n:"картофель",a:300,u:"г"},{n:"лимон",a:0.25,u:"шт"},{n:"масло растительное",a:1,u:"ст.л."},{n:"соль",a:null,u:""},{n:"специи",a:null,u:""}],
+      steps: ["Картофель дольками с маслом — аэрогриль 15 мин при 190°C.","Камбалу посолить, полить лимоном, добавить к картофелю.","Готовить ещё 10–12 мин при 180°C."] },
+    { name: "Говядина с гречкой", tool: "аэрогриль + плита", kcal: 850, p: 52, f: 30, c: 78,
+      ingredients: [{n:"говядина",a:220,u:"г"},{n:"гречка",a:90,u:"г"},{n:"лук",a:0.5,u:"шт"},{n:"масло растительное",a:1,u:"ст.л."},{n:"специи",a:null,u:""}],
+      steps: ["Отварить гречку.","Говядину со специями — аэрогриль 15–18 мин при 190°C, перевернуть.","Лук — аэрогриль 5 мин.","Подавать вместе."] },
+    { name: "Паста с фаршем индейки", tool: "плита + аэрогриль", kcal: 720, p: 38, f: 22, c: 90,
+      ingredients: [{n:"паста",a:90,u:"г"},{n:"фарш индейки",a:150,u:"г"},{n:"томатный соус",a:100,u:"г"},{n:"сыр",a:20,u:"г"},{n:"специи",a:null,u:""}],
+      steps: ["Отварить пасту.","Фарш в форму — аэрогриль 12 мин при 180°C, разминая.","Смешать с соусом.","Смешать с пастой, посыпать сыром."] },
+    { name: "Камбала с рисом и овощами", tool: "аэрогриль + плита", kcal: 650, p: 42, f: 14, c: 75,
+      ingredients: [{n:"камбала",a:250,u:"г"},{n:"рис",a:70,u:"г"},{n:"брокколи/морковь",a:150,u:"г"},{n:"лимон",a:null,u:""},{n:"специи",a:null,u:""}],
+      steps: ["Отварить рис.","Овощи — аэрогриль 8 мин при 180°C.","Камбалу с лимоном — аэрогриль 10–12 мин при 180°C.","Собрать на тарелке."] },
+    { name: "Куриные крылья BBQ с картофельным пюре", tool: "аэрогриль + плита", kcal: 780, p: 42, f: 32, c: 70,
+      ingredients: [{n:"куриные крылья",a:300,u:"г"},{n:"соус BBQ",a:30,u:"г"},{n:"картофель",a:300,u:"г"},{n:"молоко",a:50,u:"мл"},{n:"масло сливочное",a:10,u:"г"}],
+      steps: ["Крылья замариновать 10 мин.","Аэрогриль 20 мин при 190°C, перевернуть.","Картофель отварить и размять с молоком и маслом.","Подавать вместе."] },
+  ]},
+  { id: "snack1", label: "Перекус 1", time: "16:00", options: [
+    { name: "Протеиновый батончик + банан", tool: "без техники", kcal: 350, p: 20, f: 12, c: 40,
+      ingredients: [{n:"протеиновый батончик",a:1,u:"шт"},{n:"банан",a:1,u:"шт"}], steps: ["Съесть вместе — готовить не нужно."] },
+    { name: "Йогурт с орехами и мёдом", tool: "без техники", kcal: 380, p: 15, f: 20, c: 35,
+      ingredients: [{n:"йогурт",a:200,u:"г"},{n:"орехи (микс)",a:20,u:"г"},{n:"мёд",a:15,u:"г"}], steps: ["Смешать йогурт с мёдом.","Посыпать орехами."] },
+    { name: "Тост с арахисовой пастой и бананом", tool: "тостер", kcal: 400, p: 14, f: 18, c: 48,
+      ingredients: [{n:"хлеб",a:2,u:"кус."},{n:"арахисовая паста",a:20,u:"г"},{n:"банан",a:0.5,u:"шт"}], steps: ["Поджарить хлеб.","Смазать пастой, выложить банан."] },
+    { name: "Фруктовый смузи с протеином", tool: "блендер", kcal: 320, p: 25, f: 5, c: 45,
+      ingredients: [{n:"ягоды",a:150,u:"г"},{n:"банан",a:0.5,u:"шт"},{n:"молоко/вода",a:200,u:"мл"},{n:"протеин",a:1,u:"ложка"}], steps: ["Всё в блендер.","Взбить до однородности."] },
+    { name: "Сырники в аэрогриле", tool: "аэрогриль", kcal: 460, p: 27, f: 16, c: 49,
+      ingredients: [{n:"творог",a:220,u:"г"},{n:"яйцо",a:1,u:"шт"},{n:"мука",a:35,u:"г"},{n:"сахар",a:12,u:"г"}],
+      steps: ["Смешать в тесто.","Сформировать лепёшки.","Аэрогриль 12 мин при 180°C, перевернуть."] },
+    { name: "Хумус с тостами и овощами", tool: "тостер", kcal: 380, p: 14, f: 16, c: 48,
+      ingredients: [{n:"хумус",a:100,u:"г"},{n:"хлеб",a:2,u:"кус."},{n:"огурец/морковь",a:100,u:"г"}], steps: ["Поджарить хлеб.","Намазать хумусом, подавать с овощами."] },
+  ]},
+  { id: "dinner", label: "Ужин", time: "19:30", options: [
+    { name: "Камбала с овощами", tool: "аэрогриль", kcal: 550, p: 42, f: 15, c: 40,
+      ingredients: [{n:"камбала",a:250,u:"г"},{n:"овощи (кабачок, перец)",a:200,u:"г"},{n:"лимон",a:null,u:""},{n:"специи",a:null,u:""}],
+      steps: ["Камбалу с лимоном — аэрогриль 10–12 мин при 180°C.","Овощи рядом 8–10 мин при 180°C."] },
+    { name: "Куриные бёдра с рисом", tool: "аэрогриль + плита", kcal: 700, p: 40, f: 25, c: 65,
+      ingredients: [{n:"куриные бёдра",a:250,u:"г"},{n:"рис",a:70,u:"г"},{n:"специи",a:null,u:""}], steps: ["Отварить рис.","Бёдра со специями — аэрогриль 20 мин при 190°C, перевернуть."] },
+    { name: "Яичница с тостами и сыром", tool: "тостер + аэрогриль", kcal: 600, p: 32, f: 35, c: 35,
+      ingredients: [{n:"яйца",a:3,u:"шт"},{n:"хлеб",a:2,u:"кус."},{n:"сыр",a:30,u:"г"},{n:"соль",a:null,u:""}], steps: ["Яйца в форму — аэрогриль 8 мин при 160°C.","Тост с сыром в тостере.","Подавать вместе."] },
+    { name: "Стейк из говядины с картофелем", tool: "аэрогриль", kcal: 800, p: 48, f: 32, c: 60,
+      ingredients: [{n:"говяжий стейк",a:250,u:"г"},{n:"картофель",a:280,u:"г"},{n:"масло растительное",a:null,u:""},{n:"специи",a:null,u:""}], steps: ["Картофель — аэрогриль 15 мин при 190°C.","Стейк 8–10 мин при 200°C, перевернуть, дать отдохнуть 3 мин."] },
+    { name: "Камбала терияки с овощами", tool: "аэрогриль", kcal: 580, p: 40, f: 16, c: 50,
+      ingredients: [{n:"камбала",a:250,u:"г"},{n:"соус терияки",a:20,u:"г"},{n:"овощи (брокколи, морковь)",a:200,u:"г"}], steps: ["Замариновать 10 мин.","Аэрогриль 10 мин при 180°C.","Овощи рядом 8 мин."] },
+    { name: "Индейка с гречкой", tool: "аэрогриль + плита", kcal: 680, p: 44, f: 18, c: 60,
+      ingredients: [{n:"филе индейки",a:220,u:"г"},{n:"гречка",a:70,u:"г"},{n:"специи",a:null,u:""}], steps: ["Отварить гречку.","Индейку со специями — аэрогриль 15 мин при 180°C."] },
+  ]},
+  { id: "snack2", label: "Перекус 2", time: "22:00", options: [
+    { name: "Орехи и сухофрукты", tool: "без техники", kcal: 450, p: 14, f: 32, c: 34,
+      ingredients: [{n:"орехи (микс)",a:45,u:"г"},{n:"сухофрукты",a:45,u:"г"}], steps: ["Смешать — готовить не нужно."] },
+    { name: "Творог с фруктами", tool: "без техники", kcal: 300, p: 25, f: 8, c: 30,
+      ingredients: [{n:"творог 5%",a:200,u:"г"},{n:"фрукты (яблоко/груша)",a:100,u:"г"}], steps: ["Нарезать фрукты, смешать с творогом."] },
+    { name: "Тост с сыром и ветчиной", tool: "тостер", kcal: 380, p: 22, f: 20, c: 30,
+      ingredients: [{n:"хлеб",a:2,u:"кус."},{n:"сыр",a:30,u:"г"},{n:"ветчина",a:40,u:"г"}], steps: ["Собрать сэндвич.","Поджарить в тостере."] },
+    { name: "Протеиновый коктейль на молоке", tool: "блендер", kcal: 350, p: 30, f: 8, c: 35,
+      ingredients: [{n:"молоко",a:300,u:"мл"},{n:"протеин",a:1,u:"ложка"},{n:"банан",a:0.5,u:"шт"}], steps: ["В блендер, взбить 20–30 секунд."] },
+    { name: "Кефир с мёдом и бананом", tool: "блендер", kcal: 300, p: 12, f: 6, c: 48,
+      ingredients: [{n:"кефир",a:250,u:"мл"},{n:"банан",a:1,u:"шт"},{n:"мёд",a:10,u:"г"}], steps: ["Взбить в блендере до однородности."] },
+    { name: "Яблоко с арахисовой пастой", tool: "без техники", kcal: 320, p: 9, f: 18, c: 32,
+      ingredients: [{n:"яблоко",a:1,u:"шт"},{n:"арахисовая паста",a:25,u:"г"}], steps: ["Нарезать яблоко, подавать с пастой."] },
+  ]},
+];
+
+function ingLabel(ing) {
+  return ing.a != null ? `${ing.n} — ${ing.a}${ing.u}` : ing.n;
+}
+
+/* ---------- Category grouping for shopping list ---------- */
+const CATEGORIES = [
+  { title: "Мясо, рыба, яйца", keys: ["куриное филе","камбала","говядина","фарш индейки","куриные крылья","куриные бёдра","говяжий стейк","филе индейки","яйца","яйцо","ветчина","протеиновый батончик"] },
+  { title: "Молочное", keys: ["молоко","творог 5–9%","творог","творог 5%","йогурт","сыр","кефир"] },
+  { title: "Крупы, хлеб, паста", keys: ["рис","гречка","паста","хлеб","мука","гранола","овсянка"] },
+  { title: "Овощи и фрукты", keys: ["картофель","овощи (перец, кабачок)","овощи (кабачок, перец)","овощи (брокколи, морковь)","брокколи/морковь","огурец/морковь","лук","лимон","банан","яблоко","фрукты (яблоко/груша)","ягоды","авокадо","сухофрукты"] },
+  { title: "Соусы, приправы, разное", keys: ["арахисовая паста","мёд","масло растительное","масло сливочное","специи","соль","сахар","соус bbq","соус терияки","томатный соус","протеин","хумус","орехи (микс)"] },
+];
+
+function categoryFor(name) {
+  const low = name.toLowerCase();
+  for (const cat of CATEGORIES) {
+    if (cat.keys.some(k => low === k.toLowerCase())) return cat.title;
+  }
+  return "Прочее";
+}
+
+/* Aggregate ingredients from a list of chosen dish option objects into category -> [{label, key}] */
+function aggregateIngredients(dishOptions) {
+  const totals = {}; // key: name|unit -> {n, u, a (sum or null)}
+  dishOptions.forEach(opt => {
+    opt.ingredients.forEach(ing => {
+      const key = ing.n + '|' + ing.u;
+      if (!totals[key]) totals[key] = { n: ing.n, u: ing.u, a: ing.a };
+      else if (totals[key].a != null && ing.a != null) totals[key].a += ing.a;
+      else if (ing.a != null && totals[key].a == null) totals[key].a = ing.a;
+    });
+  });
+
+  const grouped = {};
+  Object.values(totals).forEach(item => {
+    const cat = categoryFor(item.n);
+    if (!grouped[cat]) grouped[cat] = [];
+    const label = item.a != null ? `${item.n} — ${round1(item.a)}${item.u}` : `${item.n} (по вкусу)`;
+    grouped[cat].push({ key: item.n + '|' + item.u, label });
+  });
+  return grouped;
+}
+
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+
+const selected = {};
+const expanded = {};
+MEALS.forEach(m => selected[m.id] = 0);
+
+function renderMeals() {
+  const container = document.getElementById('mealsContainer');
+  container.innerHTML = '';
+  MEALS.forEach(meal => {
+    const block = document.createElement('div');
+    block.className = 'meal-block';
+    const title = document.createElement('div');
+    title.className = 'meal-title';
+    title.innerHTML = `<h2>${meal.label}</h2><span class="meal-time">${meal.time}</span>`;
+    block.appendChild(title);
+
+    const opts = document.createElement('div');
+    opts.className = 'options';
+    meal.options.forEach((opt, idx) => {
+      const key = meal.id + '-' + idx;
+      const card = document.createElement('div');
+      card.className = 'opt-card' + (selected[meal.id] === idx ? ' selected' : '');
+
+      const main = document.createElement('button');
+      main.className = 'opt-main';
+      main.innerHTML = `
+        <div>
+          <div class="opt-name">${opt.name}</div>
+          <div class="opt-meta">${opt.tool} · Б ${opt.p} / Ж ${opt.f} / У ${opt.c}</div>
+        </div>
+        <div class="opt-kcal">${opt.kcal} ккал</div>
+      `;
+      main.onclick = () => { selected[meal.id] = idx; renderMeals(); };
+      card.appendChild(main);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'toggle-recipe';
+      toggleBtn.textContent = expanded[key] ? '▲ скрыть рецепт' : '▼ рецепт';
+      toggleBtn.onclick = () => { expanded[key] = !expanded[key]; renderMeals(); };
+      card.appendChild(toggleBtn);
+
+      const body = document.createElement('div');
+      body.className = 'recipe-body' + (expanded[key] ? ' show' : '');
+      body.innerHTML = `
+        <h4>Состав:</h4>
+        <ul>${opt.ingredients.map(i => `<li>${ingLabel(i)}</li>`).join('')}</ul>
+        <h4>Приготовление:</h4>
+        <ol>${opt.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      `;
+      card.appendChild(body);
+
+      opts.appendChild(card);
+    });
+    block.appendChild(opts);
+    container.appendChild(block);
+  });
+
+  let kcal = 0, p = 0, f = 0, c = 0;
+  MEALS.forEach(meal => {
+    const opt = meal.options[selected[meal.id]];
+    kcal += opt.kcal; p += opt.p; f += opt.f; c += opt.c;
+  });
+
+  document.getElementById('totalKcal').textContent = kcal + ' ккал';
+  updateMacro('p', p, TARGETS.p);
+  updateMacro('f', f, TARGETS.f);
+  updateMacro('c', c, TARGETS.c);
+}
+
+function updateMacro(key, value, target) {
+  const pct = Math.round((value / target) * 100);
+  const isOver = pct > 100;
+  const barWidth = Math.min(100, pct);
+  const label = document.getElementById(key + 'Label');
+  label.textContent = `${value}г / ${target}г (${pct}%)`;
+  label.style.color = isOver ? '#c0442a' : '#4a4640';
+  label.style.fontWeight = isOver ? '700' : '400';
+  const bar = document.getElementById(key + 'Bar');
+  bar.style.width = barWidth + '%';
+  bar.style.background = isOver ? '#c0442a' : bar.dataset.color;
+}
+
+renderMeals();
+
+document.getElementById('randomizeBtn').onclick = () => {
+  let best = null;
+  let bestScore = Infinity;
+  for (let i = 0; i < 400; i++) {
+    const combo = {};
+    MEALS.forEach(m => { combo[m.id] = Math.floor(Math.random() * m.options.length); });
+    let kcal = 0, p = 0;
+    MEALS.forEach(m => {
+      const o = m.options[combo[m.id]];
+      kcal += o.kcal; p += o.p;
+    });
+    const score = Math.abs(kcal - TARGETS_KCAL) * 1 + Math.abs(p - TARGETS.p) * 3;
+    if (score < bestScore) { bestScore = score; best = combo; }
+  }
+  Object.assign(selected, best);
+  renderMeals();
+};
+
+/* ================= WEEK PLANNER ================= */
+const WEEK_KEY = 'mealplan_week';
+const DAY_NAMES = { mon: 'Понедельник', tue: 'Вторник', wed: 'Среда', thu: 'Четверг', fri: 'Пятница', sat: 'Суббота', sun: 'Воскресенье' };
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+function getWeekPlan() { return storage.get(WEEK_KEY) || {}; }
+function saveWeekPlan(plan) { storage.set(WEEK_KEY, plan); }
+
+function dayTotals(daySelected) {
+  let kcal = 0, p = 0, f = 0, c = 0;
+  MEALS.forEach(m => {
+    const o = m.options[daySelected[m.id]];
+    kcal += o.kcal; p += o.p; f += o.f; c += o.c;
+  });
+  return { kcal, p, f, c };
+}
+
+function renderWeek() {
+  const plan = getWeekPlan();
+  const container = document.getElementById('weekContainer');
+  const summaryEl = document.getElementById('weekSummary');
+  container.innerHTML = '';
+
+  const filledDays = DAY_ORDER.filter(d => plan[d]);
+  if (filledDays.length > 0) {
+    const totalKcal = filledDays.reduce((sum, d) => sum + dayTotals(plan[d]).kcal, 0);
+    const avgKcal = Math.round(totalKcal / filledDays.length);
+    summaryEl.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Заполнено дней</div><div class="stat-value">${filledDays.length} / 7</div></div>
+      <div class="stat-card"><div class="stat-label">Средние ккал/день</div><div class="stat-value">${avgKcal}</div></div>
+    `;
+  } else {
+    summaryEl.innerHTML = '';
+  }
+
+  DAY_ORDER.forEach(day => {
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    const daySelected = plan[day];
+
+    if (!daySelected) {
+      card.innerHTML = `
+        <div class="day-card-top"><span class="day-name">${DAY_NAMES[day]}</span></div>
+        <div class="day-empty">День ещё не заполнен.</div>
+      `;
+      container.appendChild(card);
+      return;
+    }
+
+    const t = dayTotals(daySelected);
+    const dishList = MEALS.map(m => m.options[daySelected[m.id]].name).join(' · ');
+
+    card.innerHTML = `
+      <div class="day-card-top">
+        <span class="day-name">${DAY_NAMES[day]}</span>
+        <span class="day-kcal">${t.kcal} ккал</span>
+      </div>
+      <div class="day-dishes">${dishList}</div>
+      <div class="day-actions">
+        <button data-action="load" data-day="${day}">Загрузить в редактор</button>
+        <button data-action="del" data-day="${day}" class="del">Удалить</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll('[data-action="load"]').forEach(btn => {
+    btn.onclick = () => {
+      const plan = getWeekPlan();
+      Object.assign(selected, plan[btn.dataset.day]);
+      renderMeals();
+      document.querySelector('.tab-btn[data-tab="meal"]').click();
+    };
+  });
+  container.querySelectorAll('[data-action="del"]').forEach(btn => {
+    btn.onclick = () => {
+      const plan = getWeekPlan();
+      delete plan[btn.dataset.day];
+      saveWeekPlan(plan);
+      renderWeek();
+    };
+  });
+}
+
+document.getElementById('saveDayBtn').onclick = () => {
+  const day = document.getElementById('saveDaySelect').value;
+  const plan = getWeekPlan();
+  plan[day] = { ...selected };
+  saveWeekPlan(plan);
+  renderWeek();
+  const btn = document.getElementById('saveDayBtn');
+  const original = btn.textContent;
+  btn.textContent = '✓ Сохранено';
+  setTimeout(() => { btn.textContent = original; }, 1400);
+};
+
+renderWeek();
+
+/* ================= WEIGHT TRACKER ================= */
+const WEIGHT_KEY = 'mealplan_weights';
+function getWeights() { return storage.get(WEIGHT_KEY) || []; }
+function saveWeights(list) { storage.set(WEIGHT_KEY, list); }
+
+function renderWeight() {
+  const list = getWeights().slice().sort((a, b) => a.date.localeCompare(b.date));
+  const listEl = document.getElementById('weightList');
+  const statsEl = document.getElementById('weightStats');
+
+  if (list.length === 0) {
+    listEl.innerHTML = '<li class="empty-note">Пока нет записей — добавь первую выше.</li>';
+    statsEl.innerHTML = '';
+    drawChart([]);
+    return;
+  }
+
+  listEl.innerHTML = list.slice().reverse().map(entry => `
+    <li>
+      <span>${formatDate(entry.date)} — <strong>${entry.weight} кг</strong></span>
+      <button class="del-btn" data-date="${entry.date}">удалить</button>
+    </li>
+  `).join('');
+
+  listEl.querySelectorAll('.del-btn').forEach(btn => {
+    btn.onclick = () => {
+      const updated = getWeights().filter(e => e.date !== btn.dataset.date);
+      saveWeights(updated);
+      renderWeight();
+    };
+  });
+
+  const first = list[0].weight;
+  const last = list[list.length - 1].weight;
+  const diff = (last - first).toFixed(1);
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Текущий вес</div><div class="stat-value">${last} кг</div></div>
+    <div class="stat-card"><div class="stat-label">Изменение</div><div class="stat-value">${diff > 0 ? '+' : ''}${diff} кг</div></div>
+    <div class="stat-card"><div class="stat-label">До цели (65 кг)</div><div class="stat-value">${Math.max(0, (65 - last).toFixed(1))} кг</div></div>
+  `;
+
+  drawChart(list);
+}
+
+function formatDate(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+}
+
+function drawChart(list) {
+  const svg = document.getElementById('weightChart');
+  svg.innerHTML = '';
+  if (list.length < 2) {
+    svg.innerHTML = '<text x="320" y="110" text-anchor="middle" font-family="system-ui" font-size="13" fill="#9a9384">Добавь минимум 2 записи, чтобы увидеть график</text>';
+    return;
+  }
+  const weights = list.map(e => e.weight);
+  const min = Math.min(...weights) - 1;
+  const max = Math.max(...weights) + 1;
+  const w = 640, h = 220, pad = 30;
+  const stepX = (w - pad * 2) / (list.length - 1);
+
+  const points = list.map((e, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - ((e.weight - min) / (max - min)) * (h - pad * 2);
+    return [x, y];
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+
+  let svgContent = `<path d="${pathD}" fill="none" stroke="#b5652f" stroke-width="2.5" />`;
+  points.forEach(([x, y]) => {
+    svgContent += `<circle cx="${x}" cy="${y}" r="4" fill="#b5652f" />`;
+  });
+  svgContent += `<line x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}" stroke="#e8e2d6" stroke-width="1" />`;
+
+  svg.innerHTML = svgContent;
+}
+
+document.getElementById('addWeightBtn').onclick = () => {
+  const dateInput = document.getElementById('weightDate');
+  const valueInput = document.getElementById('weightValue');
+  const date = dateInput.value;
+  const weight = parseFloat(valueInput.value);
+  if (!date || !weight) return;
+
+  const list = getWeights().filter(e => e.date !== date);
+  list.push({ date, weight });
+  saveWeights(list);
+  valueInput.value = '';
+  renderWeight();
+};
+
+(function setDefaultDate() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('weightDate').value = today;
+})();
+
+renderWeight();
+
+/* ================= SHOPPING LIST (aggregated) ================= */
+const SHOP_CHECKED_KEY = 'mealplan_shop_checked';
+function getChecked() { return storage.get(SHOP_CHECKED_KEY) || {}; }
+function saveChecked(obj) { storage.set(SHOP_CHECKED_KEY, obj); }
+
+function renderShoppingList(dishOptionsList, headerNote) {
+  const checked = getChecked();
+  const container = document.getElementById('shopContainer');
+  container.innerHTML = '';
+
+  const grouped = aggregateIngredients(dishOptionsList);
+  const order = CATEGORIES.map(c => c.title).concat(["Прочее"]);
+
+  order.forEach(catTitle => {
+    const items = grouped[catTitle];
+    if (!items || items.length === 0) return;
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'shop-group-title';
+    groupTitle.textContent = catTitle;
+    container.appendChild(groupTitle);
+
+    const ul = document.createElement('ul');
+    ul.className = 'shop-list';
+    items.forEach(item => {
+      const itemKey = 'agg::' + item.key;
+      const li = document.createElement('li');
+      if (checked[itemKey]) li.classList.add('checked');
+      li.innerHTML = `<input type="checkbox" ${checked[itemKey] ? 'checked' : ''}><span>${item.label}</span>`;
+      li.querySelector('input').onchange = (e) => {
+        const c = getChecked();
+        c[itemKey] = e.target.checked;
+        saveChecked(c);
+        li.classList.toggle('checked', e.target.checked);
+      };
+      ul.appendChild(li);
+    });
+    container.appendChild(ul);
+  });
+}
+
+function shopFromCurrent() {
+  const dishList = MEALS.map(m => m.options[selected[m.id]]);
+  renderShoppingList(dishList);
+}
+
+function shopFromWeek() {
+  const plan = getWeekPlan();
+  const filledDays = DAY_ORDER.filter(d => plan[d]);
+  if (filledDays.length === 0) {
+    alert('Сначала сохрани хотя бы один день недели.');
+    return;
+  }
+  let dishList = [];
+  filledDays.forEach(day => {
+    MEALS.forEach(m => dishList.push(m.options[plan[day][m.id]]));
+  });
+  renderShoppingList(dishList);
+  document.querySelector('.tab-btn[data-tab="shop"]').click();
+}
+
+document.getElementById('genShopCurrentBtn').onclick = shopFromCurrent;
+document.getElementById('clearShopBtn').onclick = () => { saveChecked({}); shopFromCurrent(); };
+document.getElementById('weekShopBtn').onclick = shopFromWeek;
+
+shopFromCurrent();
+</script>
+</body>
+</html>
